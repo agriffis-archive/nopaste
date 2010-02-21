@@ -6,7 +6,7 @@
 # Released under the GNU General Public License v2
 #
 
-nopaste_version=2.0
+nopaste_version=2.1
 pastebin_url=${PASTEBIN_URL:-http://pastebin.com/pastebin.php}
 
 main() {
@@ -85,30 +85,36 @@ put_x_clipboard() {
 }
 
 opt_expire:() {
-  case $1 in
-    d*) expire=d ;;     # day
-    [fn]*) expire=f ;;  # forever/never
-    *) expire=m ;;      # month
-  esac
+    case $1 in
+        d*) expire=d ;;     # day
+        [fn]*) expire=f ;;  # forever/never
+        *) expire=m ;;      # month
+    esac
 }
+
+opt_private:() {
+    pastebin_url=${pastebin_url%%://*}://$1.${pastebin_url#*://}
+}
+
 opt_help() { usage; exit; }
 opt_version() { echo "nopaste $nopaste_version"; exit; }
 
 usage() {
     cat <<'EOT'
-    usage: nopaste [options] [files]
+usage: nopaste [options] [files]
 
-    -e --expire    Set expiry d/m/f, defaults to forever
-    -l --language  Set language, defaults to text
-    -n --nick      Set nick (honors PASTEBIN_USER)
-    -p --parent    Set parent paste id, for diffs
-    -x --xcut      Paste from X selection (using xclip or xcut)
+    -e --expire WHEN    Set expiry day/month/forever, defaults to forever
+    -l --language LANG  Set language, defaults to text
+    -n --nick USER      Set nick (honors PASTEBIN_USER)
+    -p --parent PID     Set parent paste id, for diffs
+       --private STR    Use a private pastebin
+    -x --xcut           Paste from X selection (using xclip or xcut)
 
-    --diff         Return diff URL (with --parent or multiple)
-    --download     Return download URL
+    --diff       Return diff URL (with --parent or multiple)
+    --download   Return download URL
 
-    --help         Show this help
-    --version      Show version info
+    --help       Show this help
+    --version    Show version info
 EOT
 }
 
