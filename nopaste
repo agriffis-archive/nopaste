@@ -17,7 +17,7 @@ $proxy = URI.parse(ENV['http_proxy'] || '')
 $proxy_user, $proxy_pass = nil, nil
 $proxy_user, $proxy_pass = $proxy.userinfo.split(/:/) if $proxy.userinfo
 $url = URI.parse("http://www.rafb.net/paste/paste.php")
-$version = '$Revision: 1252 $'.split(' ')[1]
+$version = '$Revision: 1992 $'.split(' ')[1]
 
 class CmdLine
   def self.parse(args)
@@ -29,11 +29,23 @@ class CmdLine
       opts.separator ""
       opts.separator "Options:"
 
-      opts.on("-l", "--language LANG", "set language (defaults to \"Plain Text\")") do |lang|
-        options.lang = lang
+      opts.on("-l", "--language LANG", 
+              "set language (defaults to \"Plain Text\")") do |x|
+        options.lang = x
       end
 
-      opts.on("-x", "--xcut", "nopaste from X selection (using xclip or xcut)") do
+      opts.on("-d", "--description DESCRIPTION", 
+              "set description (defaults to \"stdin\" or filename)") do |x|
+        options.desc = x
+      end
+
+      opts.on("-n", "--nick NICK", 
+              "set nick (defaults to your username)") do |x|
+        options.nick = x
+      end
+
+      opts.on("-x", "--xcut", 
+              "nopaste from X selection (using xclip or xcut)") do
         options.xcut = true 
       end
 
@@ -53,13 +65,13 @@ class CmdLine
   end
 end
 
-def nopaste(desc, text, lang = "Plain Text")
+def nopaste(nick, desc, text, lang = "Plain Text")
   cxn = Net::HTTP::Proxy($proxy.host, $proxy.port, $proxy_user, $proxy_pass
                         ).start($url.host, $url.port) { |cxn|
     response = cxn.request_post($url.path, 
       [ "cvt_tabs=No",
         "lang=#{CGI::escape(lang)}",
-        "nick=#{CGI::escape(ENV['USER'] || 'unknown')}",
+        "nick=#{CGI::escape(nick)}",
         "desc=#{CGI::escape(desc)}",
         "text=#{CGI::escape(text)}" ].join('&'),
       { 'Content-Type' => 'application/x-www-form-urlencoded' })
@@ -70,14 +82,28 @@ end
 options = CmdLine.parse(ARGV)
 urls = []
 
-if options.xcut
-  buf = %x{xclip -o 2>/dev/null || xcut -p 2>/dev/null}
-  urls << nopaste("xcut", buf, options.lang)
-elsif ARGV.empty?
-  urls << nopaste("stdin", gets(nil), options.lang)
+if options.desc.to_s.empty?
+  if options.xcut
+    options.desc = 'xcut'
+  elsif ARGV.empty?
+    options.desc = 'stdin'
+  else
+    options.desc = ARGV[0]
+  end
 end
 
-urls << nopaste(ARGV[0], gets(nil), options.lang) until ARGV.empty?
+if options.nick.to_s.empty?
+  options.nick = ENV['USER'] || 'unknown'
+end
+
+if options.xcut
+  buf = %x{xclip -o 2>/dev/null || xcut -p 2>/dev/null}
+  urls << nopaste(options.nick, options.desc, buf, options.lang)
+elsif ARGV.empty?
+  urls << nopaste(options.nick, options.desc, gets(nil), options.lang)
+end
+
+urls << nopaste(options.nick, options.desc, gets(nil), options.lang) until ARGV.empty?
 begin
   IO.popen("xclip 2>/dev/null", "w") {|p| p.print urls.map {|u| u.to_s}.join(' ') }
 rescue Errno::EPIPE
@@ -85,6 +111,11 @@ rescue Errno::EPIPE
     IO.popen("xcut 2>/dev/null", "w") {|p| p.print urls.map {|u| u.to_s}.join(' ') }
   rescue Errno::EPIPE
   end
+end
+
+if urls.to_s == "http://www.rafb.net/paste/toofast.html"
+  puts 'You must wait at least 10 seconds between each paste! Try again in 10 seconds.'
+  exit 1
 end
 
 puts urls
