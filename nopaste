@@ -52,7 +52,7 @@ main() {
 
 docurl() {
     declare u
-    u=$(curl --silent --show-error -o /dev/null -w "%{redirect_url}\n" \
+    u=$(curl -0 --silent --show-error -o /dev/null -w "%{redirect_url}\n" \
         --form-string "poster=$opt_nick" --form-string "format=$opt_language" \
         --form-string "expiry=$expire" \
         ${opt_parent:+--form-string "parent_pid=$opt_parent"} \
