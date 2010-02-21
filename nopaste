@@ -38,6 +38,11 @@ class CmdLine
         options.nick = x
       end
 
+      opts.on("-t", "--txturl",
+              "return url for the plain text file") do
+        options.txturl = true
+      end
+
       opts.on("-x", "--xcut", 
               "nopaste from X selection (using xclip or xcut)") do
         options.xcut = true 
@@ -90,7 +95,9 @@ def nopaste(nick, desc, text, lang = "Plain Text")
       if response['location'] =~ /toofast.html/
         return e("rafb.net says you're pasting too fast.  Try again in 10 seconds")
       else
-        return $url.merge(response['location'])
+        u = $url.merge(response['location'])
+        u.path = u.path.sub(/html$/, 'txt') if $options.txturl
+        return u
       end
     when Net::HTTPSuccess
       # strange
@@ -105,7 +112,7 @@ $proxy = URI.parse(ENV['http_proxy'] || '')
 $proxy_user, $proxy_pass = nil, nil
 $proxy_user, $proxy_pass = $proxy.userinfo.split(/:/) if $proxy.userinfo
 $url = URI.parse("http://www.rafb.net/paste/paste.php")
-$version = '$Revision: 2802 $'.split(' ')[1]
+$version = '$Revision: 2835 $'.split(' ')[1]
 $zero = $0.sub(/.*\//, '')
 $options = CmdLine.parse(ARGV)
 urls = []
