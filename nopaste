@@ -2,11 +2,11 @@
 #
 # nopaste -- paste to pastebin.com
 #
-# Copyright 2005,2007,2009 Aron Griffis <agriffis n01se.net>
+# Copyright 2005,2007,2009,2010 Aron Griffis <agriffis@n01se.net>
 # Released under the GNU General Public License v2
 #
 
-nopaste_version=2.1
+nopaste_version=2.2
 pastebin_url=${PASTEBIN_URL:-http://pastebin.com/pastebin.php}
 
 main() {
