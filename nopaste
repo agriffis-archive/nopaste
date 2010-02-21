@@ -97,6 +97,9 @@ opt_private:() {
 }
 
 opt_help() { usage; exit; }
+opt_help_lang() {
+    curl -s http://pastebin.com/ | grep -m1 '^Syntax' | \
+    grep -o 'value="[^"]*"' | awk -F\" '{print $2}' | xargs; exit; }
 opt_version() { echo "nopaste $nopaste_version"; exit; }
 
 usage() {
@@ -114,6 +117,7 @@ usage: nopaste [options] [files]
     --download   Return download URL
 
     --help       Show this help
+    --help-lang  Show list of languages
     --version    Show version info
 EOT
 }
