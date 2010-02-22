@@ -6,7 +6,7 @@
 # Released under the GNU General Public License v2
 #
 
-nopaste_version=2.2
+nopaste_version=HEAD
 pastebin_url=${PASTEBIN_URL:-http://pastebin.com/pastebin.php}
 
 main() {

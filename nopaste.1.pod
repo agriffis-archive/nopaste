@@ -1,0 +1,90 @@
+=head1 NAME
+
+nopaste - command-line interface to pastebin.com
+
+=head1 SYNOPSIS
+
+S<nopaste [options] [file]>
+
+=head1 DESCRIPTION
+
+Nopaste is a command-line tool for L<http://pastebin.com>. 
+Like most UNIX utilities, it can take stdin or files on the command-line.
+Additionally nopaste can use the X cut buffer for input, designed to be used
+with a window-manager key binding or panel launcher. 
+
+The resulting URLs are printed to stdout and also placed in the X cut buffer for
+middle-click pasting.
+
+=head1 OPTIONS
+
+=over
+
+=item B<--diff>
+
+Return diff URL (with --parent or multiple files)
+
+=item B<--download>
+
+Return download URL
+
+=item B<-e --expire> I<WHEN>
+
+Set expiry day/month/forever, defaults to forever.
+
+=item B<--help>
+
+Show usage help
+
+=item B<--help-lang>
+
+Show list of languages understood by L<http://pastebin.com>
+
+=item B<-l --language> I<LANG>
+
+Set language, defaults to text. Note this is the internal form value. Use
+B<--help-lang> to see the list of possibilities.
+
+=item B<-n --nick> I<USER>
+
+Set nick (honors C<$PASTEBIN_USER>, falls back to C<$USER>)
+
+=item B<-p --parent> I<PID>
+
+Set parent paste id, for diffs. If multiple files are specified on the
+command-line, the parent paste id is set automatically to create a chain of
+diffs.
+
+=item B<--private> I<STR>
+
+Use a private pastebin
+
+=item B<-x --xcut>
+
+Paste from X selection (requires xclip or xcut)
+
+=item B<--version>
+
+Show version info
+
+=back
+
+=head1 ENVIRONMENT
+
+=over
+
+=item B<PASTEBIN_URL>
+
+Override default L<http://pastebin.com/pastebin.php>. Probably unwise.
+
+=item B<PASTEBIN_USER>
+
+Set default nick. It's probably unnecessary to set this since nopaste will
+default to C<$USER>
+
+=back
+
+=head1 AUTHOR
+
+Nopaste was written by Aron Griffis L<mailto:agriffis@n01se.net>. 
+It lives at L<http://agriffis.n01se.net/nopaste/>.

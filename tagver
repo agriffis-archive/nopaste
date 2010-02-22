@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# tagver -- Generate a useful version from tags, revisions
+#           and dirt.  Works with git and mercurial. Run
+#           from the top directory of the repository.
+#
+# Copyright 2010, Aron Griffis <agriffis@n01se.net>
+# Released under the GNU GPL v2
+
+die() {
+    echo "${0##*/} error: ${1:-giving up}" >&2
+    exit 1
+}
+
+tagver-git() {
+    type git >/dev/null || die "missing git binary"
+
+    declare ver
+
+    # v1-1-g14beccc-dirty or a546953-dirty
+    ver=$(git describe --always --tags ${1:---dirty=+}) || die
+    ver=${ver#v}                # 1-1-g14beccc+
+    ver=${ver//-/.}             # 1.1.g14beccc+
+    [[ $ver == *.* ]] || ver=0.0.$ver  # no tags
+
+    echo "$ver"
+}
+
+tagver-hg() {
+    type hg >/dev/null || die "missing hg binary"
+
+    declare cset_tag cset tag cur dirty
+
+    # Get the changeset associated with the most recent tag
+    # changeset:   42:ab2fe458b727
+    # tag:         v1
+    ct=$(hg log -r "${1:-.}:0" -X .hgtags | grep -m1 -B1 '^tag: *v\?[0-9]')
+
+    # Extract the tag and changeset; maybe blank if there are no tags
+    tag=$(awk '$1=="tag:"      {print $2;exit}' <<<"$ct") # v1
+    tag=${tag#v}                                          # 1
+    ct=$(awk  '$1=="changeset:"{print $2;exit}' <<<"$ct") # 42:ab2fe458b727
+
+    # What's the current (or requested) changeset?
+    cur=$(hg log -r "${1:-.}:0" -X .hgtags \
+        | awk '$1=="changeset:" {print $2; exit}')        # 45:fe458b727ab2
+
+    # Check if the working directory is dirty
+    [[ -n $1 ]] || dirty=$(hg id -n | grep -o +)          # +
+
+    echo -n "${tag:-0.0}"
+    [[ "$cur" == "$cset" ]] || echo -n ".${cur/:/.}"
+    echo "$dirty"
+}
+
+if [[ -d .git ]]; then
+    tagver-git "$@"
+elif [[ -d .hg ]]; then
+    tagver-hg "$@"
+else
+    die "dunno"
+fi
