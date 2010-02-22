@@ -1,0 +1,37 @@
+Name:      nopaste
+Version:   HEAD
+Release:   1
+Summary:   command-line tool for pastebin.com
+Packager:  Aron Griffis <agriffis@n01se.net>
+URL:       http://agriffis.n01se.net/nopaste/
+Source0:   http://agriffis.n01se.net/nopaste/nopaste-HEAD.tar.gz
+License:   GPL
+Group:     Applications/System
+BuildArch: noarch
+Requires:  bash, curl
+Prefix:    /usr
+BuildRoot: %{_tmppath}/%{name}-root
+
+%description
+command-line tool for pastebin.com
+
+%prep
+%setup -q
+
+%build
+make %{?_smp_mflags} prefix=%{_prefix}
+
+%install
+[ "$RPM_BUILD_ROOT" != / ] && rm -rf "$RPM_BUILD_ROOT"
+make install DESTDIR=$RPM_BUILD_ROOT prefix=%{_prefix}
+
+%clean
+rm -rf "$RPM_BUILD_ROOT"
+
+%files
+%defattr(-,root,root)
+     %{_bindir}/*
+%doc %{_mandir}/*/*
+#%doc ChangeLog COPYING README
+
+%changelog

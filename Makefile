@@ -64,8 +64,8 @@ endif
 
 .PHONY: rpm
 rpm: $(rpm)
-$(rpm): $(tar)
-	rpmbuild -ta --define='_topdir $(abspath ../$(name)-$(ver))' $(tar)
+$(rpm): $(tgz)
+	rpmbuild -ta --define='_topdir $(abspath ../$(name)-$(ver))' $(tgz)
 	mv ../$(name)-$(ver)/SRPMS/* ..
 	mv ../$(name)-$(ver)/RPMS/*/* ..
 	rm -rf ../$(name)-$(ver)
