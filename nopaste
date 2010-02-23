@@ -31,7 +31,7 @@ main() {
                 echo "nopaste: can't read $f" >&2
                 exit 1
             fi
-            u=$(docurl --form-string "code2=$(<$f)")
+            u=$(docurl -F "code2=<$f") || exit
             urls+=( "$u" )
             opt_parent=$(pid "$u")
         done
@@ -39,11 +39,9 @@ main() {
         declare buf
         if $opt_xcut; then
             buf=$(get_x_clipboard) || exit 1
-        else
-            read -d '' buf
-            [[ -n $buf ]] || exit 1
+            exec <<<"$buf"
         fi
-        urls=( "$(docurl --form-string "code2=$buf")" )
+        urls=( "$(docurl -F 'code2=<-')" ) || exit
     fi
 
     put_x_clipboard <<<"${urls[*]}"
