@@ -7,17 +7,19 @@
 #
 
 nopaste_version=HEAD
-pastebin_url=${PASTEBIN_URL:-http://pastebin.com/pastebin.php}
+pastebin_url=${PASTEBIN_URL:-http://pastebin.com}
 
 main() {
-    declare opt_nick=${PASTEBIN_USER:-${USER:-$(whoami)}}
+    declare opt_title=
+    declare opt_email=$PASTEBIN_EMAIL
     declare opt_language=text
-    declare opt_diff=false
     declare opt_download=false
+    declare opt_raw=false
     declare opt_xcut=false
-    declare opt_parent=
-    declare expire=f # set by opt_expire()
-    declare shortopts=( n:nick l:language x:xcut p:parent e:expire )
+    declare opt_private=false
+    declare opt_subdomain=
+    declare expire=N # set by opt_expire()
+    declare shortopts=( e:expire l:language m:email t:title x:xcut )
     declare -a parsed_opts parsed_params
     parse_cmdline "$@" || exit
     set -- "${parsed_params[@]}"
@@ -31,9 +33,8 @@ main() {
                 echo "nopaste: can't read $f" >&2
                 exit 1
             fi
-            u=$(docurl -F "code2=<$f") || exit
+            u=$(docurl -F "paste_code=<$f") || exit
             urls+=( "$u" )
-            opt_parent=$(pid "$u")
         done
     else
         declare buf
@@ -41,7 +42,7 @@ main() {
             buf=$(get_x_clipboard) || exit 1
             exec <<<"$buf"
         fi
-        urls=( "$(docurl -F 'code2=<-')" ) || exit
+        urls=( "$(docurl -F 'paste_code=<-')" ) || exit
     fi
 
     put_x_clipboard <<<"${urls[*]}"
@@ -50,21 +51,20 @@ main() {
 
 docurl() {
     declare u
-    u=$(curl -0 --silent --show-error -o /dev/null -w "%{redirect_url}\n" \
-        --form-string "poster=$opt_nick" --form-string "format=$opt_language" \
-        --form-string "expiry=$expire" \
-        ${opt_parent:+--form-string "parent_pid=$opt_parent"} \
-        -F "paste=Send" -F "remember=0" "$@" "$pastebin_url") || exit 1
-    if [[ -n $opt_parent ]] && $opt_diff; then
-        u="$pastebin_url?diff=$(pid "$u")"
-    elif $opt_download; then
-        u="$pastebin_url?dl=$(pid "$u")"
+    u=$(curl -0 --silent --show-error \
+        --form-string "paste_name=$opt_title" \
+        --form-string "paste_email=$opt_email" \
+        --form-string "paste_format=$opt_language" \
+        --form-string "paste_expire_date=$expire" \
+        --form-string "paste_private=$($opt_private && echo 1 || echo 0)" \
+        --form-string "paste_subdomain=$opt_subdomain" \
+        "$@" "$pastebin_url/api_public.php") || exit 1
+    if $opt_download; then
+        u="$pastebin_url/download.php?i=${u##*/}"
+    elif $opt_raw; then
+        u="$pastebin_url/raw.php?i=${u##*/}"
     fi
     echo "$u"
-}
-
-pid() {
-    echo "${1##*[/=]}"
 }
 
 get_x_clipboard() {
@@ -84,35 +84,36 @@ put_x_clipboard() {
 
 opt_expire:() {
     case $1 in
-        d*) expire=d ;;     # day
-        [fn]*) expire=f ;;  # forever/never
-        *) expire=m ;;      # month
+        [FfNn]*) expire=N ;;           # never/forever
+        10[Mm]*) expire=10M ;;         # 10 minutes
+        1[Hh]*|[Hh]*) expire=1H ;;     # 1 hour
+        1[Dd]*|[Dd]*) expire=1D ;;     # 1 day
+        1[Mm]*|[Mm]*) expire=1M ;;     # 1 month
+        *) echo "nopaste: invalid expiration" >&2; exit 1 ;;
     esac
-}
-
-opt_private:() {
-    pastebin_url=${pastebin_url%%://*}://$1.${pastebin_url#*://}
 }
 
 opt_help() { usage; exit; }
 opt_help_lang() {
-    curl -s http://pastebin.com/ | grep -m1 '^Syntax' | \
-    grep -o 'value="[^"]*"' | awk -F\" '{print $2}' | xargs; exit; }
+    curl -s $pastebin_url/api.php | grep ABAP | grep -o '[^;]* = [^<]*'
+    exit ${PIPESTATUS[0]}
+}
 opt_version() { echo "nopaste $nopaste_version"; exit; }
 
 usage() {
     cat <<'EOT'
 usage: nopaste [options] [files]
 
-    -e --expire WHEN    Set expiry day/month/forever, defaults to forever
+    -e --expire WHEN    Set expiration, N/10M/1H/1D/1M (defaults to N)
     -l --language LANG  Set language, defaults to text
-    -n --nick USER      Set nick (honors PASTEBIN_USER)
-    -p --parent PID     Set parent paste id, for diffs
-       --private STR    Use a private pastebin
+    -m --email EMAIL    Address for confirmation, honors PASTE_EMAIL
+       --private        Make the paste private
+       --subdomain STR  Use subdomain
+    -t --title STR      Set paste title
     -x --xcut           Paste from X selection (using xclip or xcut)
 
-    --diff       Return diff URL (with --parent or multiple)
     --download   Return download URL
+    --raw        Return raw URL
 
     --help       Show this help
     --help-lang  Show list of languages
