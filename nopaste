@@ -59,10 +59,18 @@ docurl() {
         --form-string "paste_private=$($opt_private && echo 1 || echo 0)" \
         --form-string "paste_subdomain=$opt_subdomain" \
         "$@" "$pastebin_url/api_public.php") || exit 1
+    if [[ -z $u ]]; then
+        echo "nopaste: server returned null" >&2
+        exit 1
+    elif [[ $u != http://* ]]; then
+        echo "nopaste: server returned unexpected result:" >&2
+        echo "$u" >&2
+        exit 1
+    fi
     if $opt_download; then
-        u="$pastebin_url/download.php?i=${u##*/}"
+        u="${u%/*}/download.php?i=${u##*/}"
     elif $opt_raw; then
-        u="$pastebin_url/raw.php?i=${u##*/}"
+        u="${u%/*}/raw.php?i=${u##*/}"
     fi
     echo "$u"
 }
